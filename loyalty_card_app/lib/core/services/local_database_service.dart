@@ -1,6 +1,8 @@
 import 'package:sqflite/sqflite.dart';
 import 'package:path/path.dart';
 import 'package:path_provider/path_provider.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:sqflite_common_ffi_web/sqflite_ffi_web.dart';
 import '../../shared/models/card_model.dart';
 
 class LocalDatabaseService {
@@ -18,14 +20,27 @@ class LocalDatabaseService {
   }
 
   Future<Database> _initDatabase() async {
-    final documentsDirectory = await getApplicationDocumentsDirectory();
-    final path = join(documentsDirectory.path, 'loyalty_cards.db');
-    
-    return await openDatabase(
-      path,
-      version: 1,
-      onCreate: _createDatabase,
-    );
+    if (kIsWeb) {
+      // Web platform initialization
+      var factory = databaseFactoryFfiWeb;
+      return await factory.openDatabase(
+        'loyalty_cards.db',
+        options: OpenDatabaseOptions(
+          version: 1,
+          onCreate: _createDatabase,
+        ),
+      );
+    } else {
+      // Native platform initialization
+      final documentsDirectory = await getApplicationDocumentsDirectory();
+      final path = join(documentsDirectory.path, 'loyalty_cards.db');
+      
+      return await openDatabase(
+        path,
+        version: 1,
+        onCreate: _createDatabase,
+      );
+    }
   }
 
   Future<void> _createDatabase(Database db, int version) async {
